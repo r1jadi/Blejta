@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getApiUrl } from '../../lib/api-url'
 import AuthGuard from '../../components/AuthGuard'
 import API from '../../lib/api'
 
@@ -39,17 +38,6 @@ export default function Admin() {
     }
     fetchOrders()
   }, [router])
-  const apiUrl = getApiUrl()
-  let orders = []
-  
-  try {
-    const res = await fetch(`${apiUrl}/orders`, { cache: 'no-store' })
-    if (res.ok) {
-      orders = await res.json()
-    }
-  } catch (error) {
-    console.error('Failed to fetch orders:', error)
-  }
 
   return (
     <AuthGuard requireAdmin>

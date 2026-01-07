@@ -9,6 +9,9 @@ export declare class OrdersService {
         items: import("@prisma/client/runtime/library").JsonValue;
         address: string;
         phone: string;
+        subtotal: number | null;
+        shippingCost: number | null;
+        total: number | null;
         status: string;
         userId: number | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -19,6 +22,9 @@ export declare class OrdersService {
         items: import("@prisma/client/runtime/library").JsonValue;
         address: string;
         phone: string;
+        subtotal: number | null;
+        shippingCost: number | null;
+        total: number | null;
         status: string;
         userId: number | null;
     }[]>;
@@ -29,6 +35,9 @@ export declare class OrdersService {
         items: import("@prisma/client/runtime/library").JsonValue;
         address: string;
         phone: string;
+        subtotal: number | null;
+        shippingCost: number | null;
+        total: number | null;
         status: string;
         userId: number | null;
     }, null, import("@prisma/client/runtime/library").DefaultArgs>;
@@ -39,6 +48,9 @@ export declare class OrdersService {
         items: import("@prisma/client/runtime/library").JsonValue;
         address: string;
         phone: string;
+        subtotal: number | null;
+        shippingCost: number | null;
+        total: number | null;
         status: string;
         userId: number | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;

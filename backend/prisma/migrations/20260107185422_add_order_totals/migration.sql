@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN     "shippingCost" DOUBLE PRECISION,
+ADD COLUMN     "subtotal" DOUBLE PRECISION,
+ADD COLUMN     "total" DOUBLE PRECISION;
