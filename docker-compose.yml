@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: blejta-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blejta
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    container_name: blejta-backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/blejta?schema=public"
+      PORT: 7058
+      JWT_SECRET: "cd019e259c12b06fc00cfb1c9f512462ce083256cd8dd0c6ec1904e2b1bbb894ae8c37931ca4cbb4cae9fc24021a26faef648ad252fcfb4bc1796d72e99b50af"
+    ports:
+      - "7058:7058"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: >
+      sh -c "npx prisma generate --schema=./prisma/schema.prisma && npm run start:dev"
+
+  frontend:
+    build: ./frontend
+    container_name: blejta-frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:7058"
+      API_URL_SERVER: "http://backend:7058"
+      DOCKER_ENV: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:
