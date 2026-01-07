@@ -134,9 +134,11 @@ blejta-root/
 
 - ✅ Product browsing and detail pages
 - ✅ Shopping cart with Zustand state management
-- ✅ Checkout flow with order creation
+- ✅ Checkout flow with Stripe payment integration
+- ✅ Real payment processing with Stripe
 - ✅ Admin dashboard for viewing orders
-- ✅ RESTful API for products and orders
+- ✅ User authentication & authorization (JWT)
+- ✅ RESTful API for products, orders, and payments
 - ✅ Docker Compose setup for easy development
 
 ## 🔧 Available Scripts
@@ -161,9 +163,19 @@ blejta-root/
 
 ### Orders
 - `POST /orders` - Create new order
-- `GET /orders` - Get all orders
+- `GET /orders` - Get all orders (admin only)
 - `GET /orders/:id` - Get single order
 - `PATCH /orders/:id` - Update order status
+
+### Payments (Stripe)
+- `POST /payments/create-intent` - Create payment intent
+- `POST /payments/confirm` - Confirm payment
+- `POST /payments/webhook` - Stripe webhook handler
+
+### Authentication
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - Login user
+- `GET /auth/me` - Get current user (protected)
 
 ## 📝 Environment Variables
 
@@ -172,12 +184,61 @@ blejta-root/
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blejta?schema=public
 PORT=7058
 JWT_SECRET=your_secret_key
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 ```
 
 ### Frontend (.env.local)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:7058
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
 ```
+
+## 💳 Stripe Payment Setup
+
+1. **Create a Stripe account** at https://stripe.com
+
+2. **Get your API keys:**
+   - Go to https://dashboard.stripe.com/test/apikeys
+   - Copy your **Publishable key** (starts with `pk_test_`)
+   - Copy your **Secret key** (starts with `sk_test_`)
+
+3. **Set up webhook:**
+   
+   **For Production:**
+   - Go to https://dashboard.stripe.com/test/webhooks (test mode) or https://dashboard.stripe.com/webhooks (live mode)
+   - Click **"Add endpoint"**
+   - Enter your endpoint URL: `https://your-backend-url.com/payments/webhook`
+   - Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`
+   - Click **"Add endpoint"**
+   - Click on the webhook you just created
+   - In the **"Signing secret"** section, click **"Reveal"** and copy the secret (starts with `whsec_`)
+   
+   **For Local Development (using Stripe CLI):**
+   - Install Stripe CLI: https://stripe.com/docs/stripe-cli
+   - Run: `stripe listen --forward-to localhost:7058/payments/webhook`
+   - The CLI will display a webhook signing secret (starts with `whsec_`) - use this in your local `.env`
+   - This allows you to test webhooks locally without deploying
+
+4. **Update environment variables:**
+   - Add `STRIPE_SECRET_KEY` to backend `.env`
+   - Add `STRIPE_WEBHOOK_SECRET` to backend `.env` (for webhooks)
+   - Add `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` to frontend `.env.local`
+
+5. **For Docker setup:**
+   - Update `docker-compose.yml` with your Stripe keys, or
+   - Create a `.env` file in the project root with:
+     ```
+     STRIPE_SECRET_KEY=sk_test_...
+     STRIPE_WEBHOOK_SECRET=whsec_...
+     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+     ```
+
+6. **Test payments:**
+   - Use test card: `4242 4242 4242 4242`
+   - Any future expiry date
+   - Any 3-digit CVC
+   - See more test cards: https://stripe.com/docs/testing
 
 ## 🚢 Deployment Notes
 
@@ -198,7 +259,8 @@ NEXT_PUBLIC_API_URL=http://localhost:7058
 
 ## 🔐 Next Steps
 
-- [ ] Add authentication (JWT + login page)
+- [x] Add authentication (JWT + login page)
+- [x] Add Stripe payment integration
 - [ ] Add order status update actions in admin
 - [ ] Add product image upload (Cloudinary integration)
 - [ ] Add SMS/email notifications

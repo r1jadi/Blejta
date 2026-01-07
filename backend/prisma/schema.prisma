@@ -29,16 +29,19 @@ model Product {
 }
 
 model Order {
-  id           Int       @id @default(autoincrement())
-  userId       Int?
-  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items        Json
-  name         String
-  address      String
-  phone        String
-  subtotal     Float?
-  shippingCost Float?
-  total        Float?
-  status       String    @default("pending")
-  createdAt    DateTime  @default(now())
+  id              Int      @id @default(autoincrement())
+  userId          Int?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items           Json
+  name            String
+  address         String
+  phone           String
+  subtotal        Float?
+  shippingCost    Float?
+  total           Float?
+  status          String   @default("pending")
+  paymentIntentId String?  @unique
+  paymentStatus   String   @default("pending") // pending, succeeded, failed, canceled
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

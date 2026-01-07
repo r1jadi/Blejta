@@ -22,6 +22,8 @@ services:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/blejta?schema=public"
       PORT: 7058
       JWT_SECRET: "cd019e259c12b06fc00cfb1c9f512462ce083256cd8dd0c6ec1904e2b1bbb894ae8c37931ca4cbb4cae9fc24021a26faef648ad252fcfb4bc1796d72e99b50af"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-sk_test_your_stripe_secret_key_here}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-whsec_your_webhook_secret_here}"
     ports:
       - "7058:7058"
     volumes:
@@ -38,6 +40,7 @@ services:
       - backend
     environment:
       NEXT_PUBLIC_API_URL: "http://localhost:7058"
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-pk_test_your_stripe_publishable_key_here}"
       API_URL_SERVER: "http://backend:7058"
       DOCKER_ENV: "true"
     ports:

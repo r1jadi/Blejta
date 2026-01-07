@@ -3,10 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
+const express_1 = require("express");
 async function bootstrap() {
     const logger = new common_1.Logger('Bootstrap');
     try {
-        const app = await core_1.NestFactory.create(app_module_1.AppModule, { cors: true });
+        const app = await core_1.NestFactory.create(app_module_1.AppModule, {
+            cors: true,
+            rawBody: true,
+        });
+        app.use('/payments/webhook', (0, express_1.raw)({ type: 'application/json' }));
+        app.use((0, express_1.json)());
         await app.listen(7058);
         logger.log('🚀 Backend running at http://localhost:7058');
     }
