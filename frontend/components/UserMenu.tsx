@@ -27,8 +27,10 @@ export default function UserMenu() {
     // Clear cart from frontend state only (not from backend - it should persist for next login)
     clearFrontendOnly()
     await logout() // Logout (cart remains in backend for next login)
-    router.push('/')
-    router.refresh()
+    
+    // Redirect to home page using window.location for a hard redirect
+    // This ensures clean state and avoids any caching issues
+    window.location.href = '/'
   }
 
   if (!isAuthenticated || !user) {
@@ -77,6 +79,15 @@ export default function UserMenu() {
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Admin Panel
+            </Link>
+          )}
+          {user.role === 'user' && (
+            <Link
+              href="/orders"
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              My Orders
             </Link>
           )}
           <button

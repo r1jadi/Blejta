@@ -61,10 +61,6 @@ export default async function ProductPage({ params }: { params: { id: string } }
           <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 text-gray-600">
               <span className="text-green-600">✓</span>
-              <span>Fast delivery available</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <span className="text-green-600">✓</span>
               <span>Secure checkout</span>
             </div>
           </div>

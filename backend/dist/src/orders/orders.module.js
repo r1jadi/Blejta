@@ -8,6 +8,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersModule = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_1 = require("@nestjs/jwt");
+const config_1 = require("@nestjs/config");
 const orders_service_1 = require("./orders.service");
 const orders_controller_1 = require("./orders.controller");
 const prisma_service_1 = require("../prisma.service");
@@ -16,6 +18,16 @@ let OrdersModule = class OrdersModule {
 exports.OrdersModule = OrdersModule;
 exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
+        imports: [
+            config_1.ConfigModule,
+            jwt_1.JwtModule.registerAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: async (configService) => ({
+                    secret: configService.get('JWT_SECRET') || process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+                }),
+                inject: [config_1.ConfigService],
+            }),
+        ],
         controllers: [orders_controller_1.OrdersController],
         providers: [orders_service_1.OrdersService, prisma_service_1.PrismaService]
     })

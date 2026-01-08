@@ -21,7 +21,7 @@ export default function CartPage() {
   }, [isAuthenticated, user, items.length, loadFromBackend])
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0)
-  const shipping = 2.5
+  const shipping = 0
   const total = subtotal + shipping
 
   return (

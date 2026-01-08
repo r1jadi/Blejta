@@ -6,6 +6,7 @@ import { OrdersModule } from './orders/orders.module';
 import { AuthModule } from './auth/auth.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CartModule } from './cart/cart.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CartModule } from './cart/cart.module';
     AuthModule,
     PaymentsModule,
     CartModule,
+    UsersModule,
   ],
   providers: [PrismaService],
 })

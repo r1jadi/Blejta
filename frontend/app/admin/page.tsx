@@ -17,14 +17,16 @@ function getStatusColor(status: string) {
   }
 }
 
-type Tab = 'orders' | 'products'
+type Tab = 'orders' | 'products' | 'users'
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>('orders')
   const [orders, setOrders] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [productsLoading, setProductsLoading] = useState(true)
+  const [usersLoading, setUsersLoading] = useState(true)
   const router = useRouter()
 
   // Product form state
@@ -55,17 +57,88 @@ export default function Admin() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
+  // User form state
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user' as 'user' | 'admin'
+  })
+  const [userSubmitting, setUserSubmitting] = useState(false)
+  const [userSubmitError, setUserSubmitError] = useState('')
+  const [userSubmitSuccess, setUserSubmitSuccess] = useState(false)
+
+  // User edit state
+  const [editingUserId, setEditingUserId] = useState<number | null>(null)
+  const [userEditForm, setUserEditForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user' as 'user' | 'admin'
+  })
+  const [userUpdating, setUserUpdating] = useState(false)
+  const [userUpdateError, setUserUpdateError] = useState('')
+  const [userUpdateSuccess, setUserUpdateSuccess] = useState(false)
+
+  // User delete state
+  const [userToDelete, setUserToDelete] = useState<number | null>(null)
+  const [userDeleting, setUserDeleting] = useState(false)
+  const [userDeleteError, setUserDeleteError] = useState('')
+
+  // Order form state
+  const [orderForm, setOrderForm] = useState({
+    userId: '',
+    name: '',
+    address: '',
+    phone: '',
+    items: [] as any[],
+    subtotal: '',
+    shippingCost: '',
+    total: '',
+    status: 'pending',
+    paymentStatus: 'pending'
+  })
+  const [orderSubmitting, setOrderSubmitting] = useState(false)
+  const [orderSubmitError, setOrderSubmitError] = useState('')
+  const [orderSubmitSuccess, setOrderSubmitSuccess] = useState(false)
+
+  // Order edit state
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null)
+  const [orderEditForm, setOrderEditForm] = useState({
+    userId: '',
+    name: '',
+    address: '',
+    phone: '',
+    items: [] as any[],
+    subtotal: '',
+    shippingCost: '',
+    total: '',
+    status: 'pending',
+    paymentStatus: 'pending'
+  })
+  const [orderUpdating, setOrderUpdating] = useState(false)
+  const [orderUpdateError, setOrderUpdateError] = useState('')
+  const [orderUpdateSuccess, setOrderUpdateSuccess] = useState(false)
+
+  // Order delete state
+  const [orderToDelete, setOrderToDelete] = useState<number | null>(null)
+  const [orderDeleting, setOrderDeleting] = useState(false)
+  const [orderDeleteError, setOrderDeleteError] = useState('')
+
   useEffect(() => {
     if (activeTab === 'orders') {
       fetchOrders()
-    } else {
+      fetchUsers() // Fetch users for dropdown
+    } else if (activeTab === 'products') {
       fetchProducts()
+    } else if (activeTab === 'users') {
+      fetchUsers()
     }
   }, [activeTab])
 
   async function fetchOrders() {
     try {
-      const res = await API.get('/orders')
+      const res = await API.get('/orders/admin/all')
       setOrders(res.data)
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -88,6 +161,20 @@ export default function Admin() {
       console.error('Failed to fetch products:', error)
     } finally {
       setProductsLoading(false)
+    }
+  }
+
+  async function fetchUsers() {
+    try {
+      const res = await API.get('/users')
+      setUsers(res.data)
+    } catch (error: any) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        router.push('/login')
+      }
+      console.error('Failed to fetch users:', error)
+    } finally {
+      setUsersLoading(false)
     }
   }
 
@@ -282,6 +369,309 @@ export default function Admin() {
     }
   }
 
+  // User CRUD functions
+  async function handleUserSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setUserSubmitError('')
+    setUserSubmitSuccess(false)
+    setUserSubmitting(true)
+
+    try {
+      if (!userForm.name.trim()) {
+        throw new Error('Name is required')
+      }
+      if (!userForm.email.trim()) {
+        throw new Error('Email is required')
+      }
+      if (!userForm.password || userForm.password.length < 6) {
+        throw new Error('Password must be at least 6 characters')
+      }
+
+      await API.post('/users', userForm)
+      
+      setUserForm({
+        name: '',
+        email: '',
+        password: '',
+        role: 'user'
+      })
+      setUserSubmitSuccess(true)
+      
+      await fetchUsers()
+      
+      setTimeout(() => setUserSubmitSuccess(false), 3000)
+    } catch (error: any) {
+      setUserSubmitError(error.response?.data?.message || error.message || 'Failed to create user')
+    } finally {
+      setUserSubmitting(false)
+    }
+  }
+
+  function startUserEdit(user: any) {
+    setEditingUserId(user.id)
+    setUserEditForm({
+      name: user.name || '',
+      email: user.email || '',
+      password: '',
+      role: user.role || 'user'
+    })
+    setUserUpdateError('')
+    setUserUpdateSuccess(false)
+  }
+
+  function cancelUserEdit() {
+    setEditingUserId(null)
+    setUserEditForm({
+      name: '',
+      email: '',
+      password: '',
+      role: 'user'
+    })
+    setUserUpdateError('')
+    setUserUpdateSuccess(false)
+  }
+
+  async function handleUserUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingUserId) return
+
+    setUserUpdateError('')
+    setUserUpdateSuccess(false)
+    setUserUpdating(true)
+
+    try {
+      if (!userEditForm.name.trim()) {
+        throw new Error('Name is required')
+      }
+      if (!userEditForm.email.trim()) {
+        throw new Error('Email is required')
+      }
+      
+      const payload: any = {
+        name: userEditForm.name.trim(),
+        email: userEditForm.email.trim(),
+        role: userEditForm.role
+      }
+
+      // Only include password if it was changed
+      if (userEditForm.password) {
+        if (userEditForm.password.length < 6) {
+          throw new Error('Password must be at least 6 characters')
+        }
+        payload.password = userEditForm.password
+      }
+
+      await API.put(`/users/${editingUserId}`, payload)
+      
+      setUserUpdateSuccess(true)
+      cancelUserEdit()
+      
+      await fetchUsers()
+      
+      setTimeout(() => setUserUpdateSuccess(false), 3000)
+    } catch (error: any) {
+      setUserUpdateError(error.response?.data?.message || error.message || 'Failed to update user')
+    } finally {
+      setUserUpdating(false)
+    }
+  }
+
+  function confirmUserDelete(userId: number) {
+    setUserToDelete(userId)
+    setUserDeleteError('')
+  }
+
+  function cancelUserDelete() {
+    setUserToDelete(null)
+    setUserDeleteError('')
+  }
+
+  async function handleUserDelete() {
+    if (!userToDelete) return
+
+    setUserDeleting(true)
+    setUserDeleteError('')
+
+    try {
+      await API.delete(`/users/${userToDelete}`)
+      setUserToDelete(null)
+      
+      await fetchUsers()
+    } catch (error: any) {
+      setUserDeleteError(error.response?.data?.message || error.message || 'Failed to delete user')
+    } finally {
+      setUserDeleting(false)
+    }
+  }
+
+  // Order CRUD functions
+  async function handleOrderSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setOrderSubmitError('')
+    setOrderSubmitSuccess(false)
+    setOrderSubmitting(true)
+
+    try {
+      if (!orderForm.name.trim()) {
+        throw new Error('Customer name is required')
+      }
+      if (!orderForm.address.trim()) {
+        throw new Error('Address is required')
+      }
+      if (!orderForm.phone.trim()) {
+        throw new Error('Phone is required')
+      }
+
+      const payload: any = {
+        userId: orderForm.userId ? parseInt(orderForm.userId) : null,
+        name: orderForm.name.trim(),
+        address: orderForm.address.trim(),
+        phone: orderForm.phone.trim(),
+        items: orderForm.items.length > 0 ? orderForm.items : [],
+        subtotal: orderForm.subtotal ? parseFloat(orderForm.subtotal) : 0,
+        shippingCost: orderForm.shippingCost ? parseFloat(orderForm.shippingCost) : 0,
+        total: orderForm.total ? parseFloat(orderForm.total) : 0,
+        status: orderForm.status,
+        paymentStatus: orderForm.paymentStatus
+      }
+
+      await API.post('/orders/admin/create', payload)
+      
+      setOrderForm({
+        userId: '',
+        name: '',
+        address: '',
+        phone: '',
+        items: [],
+        subtotal: '',
+        shippingCost: '',
+        total: '',
+        status: 'pending',
+        paymentStatus: 'pending'
+      })
+      setOrderSubmitSuccess(true)
+      
+      await fetchOrders()
+      
+      setTimeout(() => setOrderSubmitSuccess(false), 3000)
+    } catch (error: any) {
+      setOrderSubmitError(error.response?.data?.message || error.message || 'Failed to create order')
+    } finally {
+      setOrderSubmitting(false)
+    }
+  }
+
+  function startOrderEdit(order: any) {
+    setEditingOrderId(order.id)
+    setOrderEditForm({
+      userId: order.userId?.toString() || '',
+      name: order.name || '',
+      address: order.address || '',
+      phone: order.phone || '',
+      items: Array.isArray(order.items) ? order.items : [],
+      subtotal: order.subtotal?.toString() || '',
+      shippingCost: order.shippingCost?.toString() || '',
+      total: order.total?.toString() || '',
+      status: order.status || 'pending',
+      paymentStatus: order.paymentStatus || 'pending'
+    })
+    setOrderUpdateError('')
+    setOrderUpdateSuccess(false)
+  }
+
+  function cancelOrderEdit() {
+    setEditingOrderId(null)
+    setOrderEditForm({
+      userId: '',
+      name: '',
+      address: '',
+      phone: '',
+      items: [],
+      subtotal: '',
+      shippingCost: '',
+      total: '',
+      status: 'pending',
+      paymentStatus: 'pending'
+    })
+    setOrderUpdateError('')
+    setOrderUpdateSuccess(false)
+  }
+
+  async function handleOrderUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingOrderId) return
+
+    setOrderUpdateError('')
+    setOrderUpdateSuccess(false)
+    setOrderUpdating(true)
+
+    try {
+      if (!orderEditForm.name.trim()) {
+        throw new Error('Customer name is required')
+      }
+      if (!orderEditForm.address.trim()) {
+        throw new Error('Address is required')
+      }
+      if (!orderEditForm.phone.trim()) {
+        throw new Error('Phone is required')
+      }
+
+      const payload: any = {
+        userId: orderEditForm.userId ? parseInt(orderEditForm.userId) : null,
+        name: orderEditForm.name.trim(),
+        address: orderEditForm.address.trim(),
+        phone: orderEditForm.phone.trim(),
+        items: orderEditForm.items,
+        subtotal: orderEditForm.subtotal ? parseFloat(orderEditForm.subtotal) : 0,
+        shippingCost: orderEditForm.shippingCost ? parseFloat(orderEditForm.shippingCost) : 0,
+        total: orderEditForm.total ? parseFloat(orderEditForm.total) : 0,
+        status: orderEditForm.status,
+        paymentStatus: orderEditForm.paymentStatus
+      }
+
+      await API.put(`/orders/${editingOrderId}`, payload)
+      
+      setOrderUpdateSuccess(true)
+      cancelOrderEdit()
+      
+      await fetchOrders()
+      
+      setTimeout(() => setOrderUpdateSuccess(false), 3000)
+    } catch (error: any) {
+      setOrderUpdateError(error.response?.data?.message || error.message || 'Failed to update order')
+    } finally {
+      setOrderUpdating(false)
+    }
+  }
+
+  function confirmOrderDelete(orderId: number) {
+    setOrderToDelete(orderId)
+    setOrderDeleteError('')
+  }
+
+  function cancelOrderDelete() {
+    setOrderToDelete(null)
+    setOrderDeleteError('')
+  }
+
+  async function handleOrderDelete() {
+    if (!orderToDelete) return
+
+    setOrderDeleting(true)
+    setOrderDeleteError('')
+
+    try {
+      await API.delete(`/orders/${orderToDelete}`)
+      setOrderToDelete(null)
+      
+      await fetchOrders()
+    } catch (error: any) {
+      setOrderDeleteError(error.response?.data?.message || error.message || 'Failed to delete order')
+    } finally {
+      setOrderDeleting(false)
+    }
+  }
+
   return (
     <AuthGuard requireAdmin>
       <div className="max-w-6xl mx-auto">
@@ -313,69 +703,478 @@ export default function Admin() {
             >
               Products
             </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`pb-4 px-2 font-medium transition-colors ${
+                activeTab === 'users'
+                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Users
+            </button>
           </nav>
         </div>
 
         {/* Orders Tab */}
         {activeTab === 'orders' && (
-          <>
-            {ordersLoading ? (
-              <div className="text-center py-16">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                <p className="mt-4 text-gray-600">Loading orders...</p>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-16 bg-gray-50 rounded-xl">
-                <div className="text-6xl mb-4">📦</div>
-                <p className="text-gray-600 text-lg">No orders yet.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {orders.map((o: any) => (
-                  <div key={o.id} className="bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-xl font-bold text-gray-900">Order #{o.id}</h3>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(o.status)}`}>
-                            {o.status.toUpperCase()}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <span className="font-medium">Customer:</span>
-                            <span>{o.name}</span>
+          <div className="space-y-8">
+            {/* Add Order Form */}
+            <div className="bg-white rounded-xl shadow-card p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Order</h2>
+              
+              <form onSubmit={handleOrderSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="order-user" className="block text-sm font-medium text-gray-700 mb-1">
+                      User (Optional)
+                    </label>
+                    <select
+                      id="order-user"
+                      value={orderForm.userId}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, userId: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value="">No User (Guest Order)</option>
+                      {users.map((user: any) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="order-name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Customer Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="order-name"
+                      value={orderForm.name}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="order-address" className="block text-sm font-medium text-gray-700 mb-1">
+                    Address *
+                  </label>
+                  <textarea
+                    id="order-address"
+                    value={orderForm.address}
+                    onChange={(e) => setOrderForm(prev => ({ ...prev, address: e.target.value }))}
+                    rows={2}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="order-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      id="order-phone"
+                      value={orderForm.phone}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="order-status" className="block text-sm font-medium text-gray-700 mb-1">
+                      Order Status *
+                    </label>
+                    <select
+                      id="order-status"
+                      value={orderForm.status}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="processing">Processing</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="order-subtotal" className="block text-sm font-medium text-gray-700 mb-1">
+                      Subtotal (€)
+                    </label>
+                    <input
+                      type="number"
+                      id="order-subtotal"
+                      step="0.01"
+                      min="0"
+                      value={orderForm.subtotal}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, subtotal: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="order-shipping" className="block text-sm font-medium text-gray-700 mb-1">
+                      Shipping (€)
+                    </label>
+                    <input
+                      type="number"
+                      id="order-shipping"
+                      step="0.01"
+                      min="0"
+                      value={orderForm.shippingCost}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, shippingCost: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="order-total" className="block text-sm font-medium text-gray-700 mb-1">
+                      Total (€)
+                    </label>
+                    <input
+                      type="number"
+                      id="order-total"
+                      step="0.01"
+                      min="0"
+                      value={orderForm.total}
+                      onChange={(e) => setOrderForm(prev => ({ ...prev, total: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+
+                {orderSubmitError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {orderSubmitError}
+                  </div>
+                )}
+
+                {orderSubmitSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                    Order created successfully!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={orderSubmitting}
+                  className="w-full bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {orderSubmitting ? 'Creating...' : 'Create Order'}
+                </button>
+              </form>
+            </div>
+
+            {/* Orders List */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                All Orders {orders.length > 0 && <span className="text-lg text-gray-500 font-normal">({orders.length})</span>}
+              </h2>
+              
+              {ordersLoading ? (
+                <div className="text-center py-16">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                  <p className="mt-4 text-gray-600">Loading orders...</p>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-16 bg-gray-50 rounded-xl">
+                  <div className="text-6xl mb-4">📦</div>
+                  <p className="text-gray-600 text-lg">No orders yet. Create your first order above!</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {orders.map((o: any) => (
+                    <div key={o.id} className="bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h3 className="text-xl font-bold text-gray-900">Order #{o.id}</h3>
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(o.status)}`}>
+                                {o.status.toUpperCase()}
+                              </span>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <span className="font-medium">Customer:</span>
+                                <span>{o.name}</span>
+                                {o.user && (
+                                  <span className="text-xs text-gray-500">(User: {o.user.email})</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <span className="font-medium">Phone:</span>
+                                <span>{o.phone}</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-gray-700">
+                                <span className="font-medium">Address:</span>
+                                <span className="flex-1">{o.address}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <span className="font-medium">Total:</span>
+                                <span className="text-lg font-bold text-primary-600">{o.total ? o.total.toFixed(2) : '0.00'} €</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-600 text-xs">
+                                <span className="font-medium">Items:</span>
+                                <span>{Array.isArray(o.items) ? o.items.length : 0}</span>
+                                <span className="mx-2">•</span>
+                                <span className="font-medium">Created:</span>
+                                <span>{new Date(o.createdAt).toLocaleDateString()} {new Date(o.createdAt).toLocaleTimeString()}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <span className="font-medium">Phone:</span>
-                            <span>{o.phone}</span>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => startOrderEdit(o)}
+                              className="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => confirmOrderDelete(o.id)}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors text-sm"
+                            >
+                              🗑️ Delete
+                            </button>
                           </div>
-                          <div className="flex items-start gap-2 text-gray-700">
-                            <span className="font-medium">Address:</span>
-                            <span className="flex-1">{o.address}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="sm:text-right space-y-2">
-                        <div className="text-sm text-gray-600">
-                          <div className="font-medium text-gray-900 mb-1">Items</div>
-                          {Array.isArray(o.items) ? o.items.length : 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <div className="font-medium text-gray-900 mb-1">Created</div>
-                          {new Date(o.createdAt).toLocaleDateString()}
-                          <br />
-                          <span className="text-xs">{new Date(o.createdAt).toLocaleTimeString()}</span>
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Edit Order Modal */}
+            {editingOrderId && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">Edit Order</h2>
+                      <button
+                        onClick={cancelOrderEdit}
+                        className="text-gray-400 hover:text-gray-600 text-2xl"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <form onSubmit={handleOrderUpdate} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="edit-order-user" className="block text-sm font-medium text-gray-700 mb-1">
+                            User (Optional)
+                          </label>
+                          <select
+                            id="edit-order-user"
+                            value={orderEditForm.userId}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, userId: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          >
+                            <option value="">No User (Guest Order)</option>
+                            {users.map((user: any) => (
+                              <option key={user.id} value={user.id}>
+                                {user.name} ({user.email})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="edit-order-name" className="block text-sm font-medium text-gray-700 mb-1">
+                            Customer Name *
+                          </label>
+                          <input
+                            type="text"
+                            id="edit-order-name"
+                            value={orderEditForm.name}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="edit-order-address" className="block text-sm font-medium text-gray-700 mb-1">
+                          Address *
+                        </label>
+                        <textarea
+                          id="edit-order-address"
+                          value={orderEditForm.address}
+                          onChange={(e) => setOrderEditForm(prev => ({ ...prev, address: e.target.value }))}
+                          rows={2}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="edit-order-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                            Phone *
+                          </label>
+                          <input
+                            type="tel"
+                            id="edit-order-phone"
+                            value={orderEditForm.phone}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="edit-order-status" className="block text-sm font-medium text-gray-700 mb-1">
+                            Order Status *
+                          </label>
+                          <select
+                            id="edit-order-status"
+                            value={orderEditForm.status}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, status: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="edit-order-subtotal" className="block text-sm font-medium text-gray-700 mb-1">
+                            Subtotal (€)
+                          </label>
+                          <input
+                            type="number"
+                            id="edit-order-subtotal"
+                            step="0.01"
+                            min="0"
+                            value={orderEditForm.subtotal}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, subtotal: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="edit-order-shipping" className="block text-sm font-medium text-gray-700 mb-1">
+                            Shipping (€)
+                          </label>
+                          <input
+                            type="number"
+                            id="edit-order-shipping"
+                            step="0.01"
+                            min="0"
+                            value={orderEditForm.shippingCost}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, shippingCost: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="edit-order-total" className="block text-sm font-medium text-gray-700 mb-1">
+                            Total (€)
+                          </label>
+                          <input
+                            type="number"
+                            id="edit-order-total"
+                            step="0.01"
+                            min="0"
+                            value={orderEditForm.total}
+                            onChange={(e) => setOrderEditForm(prev => ({ ...prev, total: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+                      </div>
+
+                      {orderUpdateError && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                          {orderUpdateError}
+                        </div>
+                      )}
+
+                      {orderUpdateSuccess && (
+                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                          Order updated successfully!
+                        </div>
+                      )}
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={cancelOrderEdit}
+                          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={orderUpdating}
+                          className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {orderUpdating ? 'Updating...' : 'Update Order'}
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                ))}
+                </div>
               </div>
             )}
-          </>
+
+            {/* Delete Order Confirmation Modal */}
+            {orderToDelete && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+                  <div className="p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Delete Order</h2>
+                    <p className="text-gray-600 mb-6">
+                      Are you sure you want to delete this order? This action cannot be undone.
+                    </p>
+
+                    {orderDeleteError && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                        {orderDeleteError}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={cancelOrderDelete}
+                        disabled={orderDeleting}
+                        className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleOrderDelete}
+                        disabled={orderDeleting}
+                        className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {orderDeleting ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Products Tab */}
@@ -699,6 +1498,313 @@ export default function Admin() {
                         className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {deleting ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="space-y-8">
+            {/* Add User Form */}
+            <div className="bg-white rounded-xl shadow-card p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New User</h2>
+              
+              <form onSubmit={handleUserSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="user-name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="user-name"
+                    value={userForm.name}
+                    onChange={(e) => setUserForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="user-email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    id="user-email"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="user-password" className="block text-sm font-medium text-gray-700 mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    id="user-password"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    minLength={6}
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+                </div>
+
+                <div>
+                  <label htmlFor="user-role" className="block text-sm font-medium text-gray-700 mb-1">
+                    Role *
+                  </label>
+                  <select
+                    id="user-role"
+                    value={userForm.role}
+                    onChange={(e) => setUserForm(prev => ({ ...prev, role: e.target.value as 'user' | 'admin' }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+                {userSubmitError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {userSubmitError}
+                  </div>
+                )}
+
+                {userSubmitSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                    User created successfully!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={userSubmitting}
+                  className="w-full bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {userSubmitting ? 'Creating...' : 'Create User'}
+                </button>
+              </form>
+            </div>
+
+            {/* Users List */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                All Users {users.length > 0 && <span className="text-lg text-gray-500 font-normal">({users.length})</span>}
+              </h2>
+              
+              {usersLoading ? (
+                <div className="text-center py-16">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                  <p className="mt-4 text-gray-600">Loading users...</p>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-16 bg-gray-50 rounded-xl">
+                  <div className="text-6xl mb-4">👥</div>
+                  <p className="text-gray-600 text-lg">No users yet. Add your first user above!</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {users.map((user: any) => (
+                    <div key={user.id} className="bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                              user.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800 border-purple-200' 
+                                : 'bg-blue-100 text-blue-800 border-blue-200'
+                            }`}>
+                              {user.role.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center gap-2 text-gray-700">
+                              <span className="font-medium">Email:</span>
+                              <span>{user.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600 text-xs">
+                              <span className="font-medium">User ID:</span>
+                              <span>#{user.id}</span>
+                            </div>
+                            {user.createdAt && (
+                              <div className="flex items-center gap-2 text-gray-600 text-xs">
+                                <span className="font-medium">Created:</span>
+                                <span>{new Date(user.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => startUserEdit(user)}
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => confirmUserDelete(user.id)}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Edit User Modal */}
+            {editingUserId && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">Edit User</h2>
+                      <button
+                        onClick={cancelUserEdit}
+                        className="text-gray-400 hover:text-gray-600 text-2xl"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <form onSubmit={handleUserUpdate} className="space-y-4">
+                      <div>
+                        <label htmlFor="edit-user-name" className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-user-name"
+                          value={userEditForm.name}
+                          onChange={(e) => setUserEditForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="edit-user-email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          id="edit-user-email"
+                          value={userEditForm.email}
+                          onChange={(e) => setUserEditForm(prev => ({ ...prev, email: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="edit-user-password" className="block text-sm font-medium text-gray-700 mb-1">
+                          Password (leave blank to keep unchanged)
+                        </label>
+                        <input
+                          type="password"
+                          id="edit-user-password"
+                          value={userEditForm.password}
+                          onChange={(e) => setUserEditForm(prev => ({ ...prev, password: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          minLength={6}
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Minimum 6 characters if changing</p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="edit-user-role" className="block text-sm font-medium text-gray-700 mb-1">
+                          Role *
+                        </label>
+                        <select
+                          id="edit-user-role"
+                          value={userEditForm.role}
+                          onChange={(e) => setUserEditForm(prev => ({ ...prev, role: e.target.value as 'user' | 'admin' }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
+
+                      {userUpdateError && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                          {userUpdateError}
+                        </div>
+                      )}
+
+                      {userUpdateSuccess && (
+                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                          User updated successfully!
+                        </div>
+                      )}
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={cancelUserEdit}
+                          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={userUpdating}
+                          className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {userUpdating ? 'Updating...' : 'Update User'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Delete User Confirmation Modal */}
+            {userToDelete && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+                  <div className="p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Delete User</h2>
+                    <p className="text-gray-600 mb-6">
+                      Are you sure you want to delete this user? This action cannot be undone and will also delete their cart and any associated data.
+                    </p>
+
+                    {userDeleteError && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                        {userDeleteError}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={cancelUserDelete}
+                        disabled={userDeleting}
+                        className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleUserDelete}
+                        disabled={userDeleting}
+                        className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {userDeleting ? 'Deleting...' : 'Delete'}
                       </button>
                     </div>
                   </div>

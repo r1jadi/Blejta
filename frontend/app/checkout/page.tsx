@@ -120,7 +120,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<'info' | 'payment'>('info')
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0)
-  const shipping = 2.5
+  const shipping = 0
   const total = subtotal + shipping
 
   useEffect(() => {
