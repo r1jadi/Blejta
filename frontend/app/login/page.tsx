@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import API from '../../lib/api'
 import { useAuthStore } from '../../lib/auth-store'
+import useCart from '../../lib/store'
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore(s => s.login)
+  const loadFromBackend = useCart(s => s.loadFromBackend)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,6 +23,12 @@ export default function LoginPage() {
     try {
       const res = await API.post('/auth/login', { email, password })
       login(res.data.user, res.data.token)
+      
+      // Load cart from backend for regular users (always load, even if empty)
+      if (res.data.user.role === 'user') {
+        await loadFromBackend()
+      }
+      
       router.push('/')
       router.refresh()
     } catch (err: any) {

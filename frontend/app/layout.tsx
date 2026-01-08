@@ -3,6 +3,7 @@ import { ReactNode } from 'react'
 import Link from 'next/link'
 import Logo from '../components/Logo'
 import UserMenu from '../components/UserMenu'
+import CartLoader from '../components/CartLoader'
 
 export const metadata = {
   title: 'Blejta',
@@ -31,7 +32,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
+          <main className="flex-1 container mx-auto px-4 py-8">
+            <CartLoader />
+            {children}
+          </main>
 
           <footer className="bg-gradient-to-b from-gray-50 to-white border-t border-gray-200 mt-16">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">

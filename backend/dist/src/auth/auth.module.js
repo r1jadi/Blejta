@@ -15,6 +15,7 @@ const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
 const jwt_strategy_1 = require("./jwt.strategy");
 const prisma_service_1 = require("../prisma.service");
+const cart_module_1 = require("../cart/cart.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -23,13 +24,14 @@ exports.AuthModule = AuthModule = __decorate([
         imports: [
             config_1.ConfigModule,
             passport_1.PassportModule,
+            cart_module_1.CartModule,
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 useFactory: async (configService) => {
                     const secret = configService.get('JWT_SECRET') || process.env.JWT_SECRET || 'your-secret-key-change-in-production';
                     return {
                         secret,
-                        signOptions: { expiresIn: '7d' },
+                        signOptions: { expiresIn: '24h' },
                     };
                 },
                 inject: [config_1.ConfigService],

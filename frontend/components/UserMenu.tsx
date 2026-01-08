@@ -2,11 +2,13 @@
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '../lib/auth-store'
+import useCart from '../lib/store'
 import { useState, useRef, useEffect } from 'react'
 
 export default function UserMenu() {
   const router = useRouter()
   const { user, isAuthenticated, logout } = useAuthStore()
+  const clearFrontendOnly = useCart(s => s.clearFrontendOnly)
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -21,8 +23,10 @@ export default function UserMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    // Clear cart from frontend state only (not from backend - it should persist for next login)
+    clearFrontendOnly()
+    await logout() // Logout (cart remains in backend for next login)
     router.push('/')
     router.refresh()
   }

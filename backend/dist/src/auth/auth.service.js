@@ -14,10 +14,12 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma.service");
 const bcrypt = require("bcrypt");
+const cart_service_1 = require("../cart/cart.service");
 let AuthService = class AuthService {
-    constructor(prisma, jwtService) {
+    constructor(prisma, jwtService, cartService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.cartService = cartService;
     }
     async register(registerDto) {
         const { email, password, name } = registerDto;
@@ -47,10 +49,12 @@ let AuthService = class AuthService {
             sub: user.id,
             email: user.email,
             role: user.role
-        });
+        }, { expiresIn: '24h' });
+        const cart = await this.cartService.getCart(user.id);
         return {
             user,
             token,
+            cart: cart.items,
         };
     }
     async login(loginDto) {
@@ -65,11 +69,17 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        const expiresIn = user.role === 'admin' ? '1h' : '24h';
         const token = this.jwtService.sign({
             sub: user.id,
             email: user.email,
             role: user.role
-        });
+        }, { expiresIn });
+        let cart = null;
+        if (user.role === 'user') {
+            const userCart = await this.cartService.getCart(user.id);
+            cart = userCart.items;
+        }
         return {
             user: {
                 id: user.id,
@@ -79,6 +89,7 @@ let AuthService = class AuthService {
                 createdAt: user.createdAt,
             },
             token,
+            cart,
         };
     }
     async validateUser(userId) {
@@ -94,11 +105,15 @@ let AuthService = class AuthService {
         });
         return user;
     }
+    async logout(userId) {
+        return { message: 'Logged out successfully' };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        cart_service_1.CartService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

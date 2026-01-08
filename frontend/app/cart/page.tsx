@@ -1,13 +1,24 @@
 'use client'
+import { useEffect } from 'react'
 import useCart from '../../lib/store'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuthStore } from '../../lib/auth-store'
 
 export default function CartPage() {
   const items = useCart(s => s.items)
   const remove = useCart(s => s.remove)
   const clear = useCart(s => s.clear)
+  const loadFromBackend = useCart(s => s.loadFromBackend)
+  const { isAuthenticated, user } = useAuthStore()
   const router = useRouter()
+
+  // Ensure cart is loaded when page mounts
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'user' && items.length === 0) {
+      loadFromBackend()
+    }
+  }, [isAuthenticated, user, items.length, loadFromBackend])
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0)
   const shipping = 2.5

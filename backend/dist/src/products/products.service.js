@@ -22,6 +22,42 @@ let ProductsService = class ProductsService {
     findOne(id) {
         return this.prisma.product.findUnique({ where: { id } });
     }
+    create(createProductDto) {
+        return this.prisma.product.create({
+            data: {
+                name: createProductDto.name,
+                description: createProductDto.description || null,
+                price: createProductDto.price,
+                images: createProductDto.images || [],
+            },
+        });
+    }
+    async update(id, updateProductDto) {
+        const product = await this.findOne(id);
+        if (!product) {
+            throw new common_1.NotFoundException(`Product with ID ${id} not found`);
+        }
+        return this.prisma.product.update({
+            where: { id },
+            data: {
+                ...(updateProductDto.name && { name: updateProductDto.name }),
+                ...(updateProductDto.description !== undefined && {
+                    description: updateProductDto.description || null
+                }),
+                ...(updateProductDto.price && { price: updateProductDto.price }),
+                ...(updateProductDto.images && { images: updateProductDto.images }),
+            },
+        });
+    }
+    async remove(id) {
+        const product = await this.findOne(id);
+        if (!product) {
+            throw new common_1.NotFoundException(`Product with ID ${id} not found`);
+        }
+        return this.prisma.product.delete({
+            where: { id },
+        });
+    }
 };
 exports.ProductsService = ProductsService;
 exports.ProductsService = ProductsService = __decorate([

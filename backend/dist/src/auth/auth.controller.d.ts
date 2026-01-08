@@ -13,6 +13,7 @@ export declare class AuthController {
             createdAt: Date;
         };
         token: string;
+        cart: import("@prisma/client/runtime/library").JsonValue;
     }>;
     login(loginDto: LoginDto): Promise<{
         user: {
@@ -23,6 +24,10 @@ export declare class AuthController {
             createdAt: Date;
         };
         token: string;
+        cart: any;
     }>;
     getProfile(req: any): Promise<any>;
+    logout(req: any): Promise<{
+        message: string;
+    }>;
 }

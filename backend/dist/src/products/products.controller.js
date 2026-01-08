@@ -15,6 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductsController = void 0;
 const common_1 = require("@nestjs/common");
 const products_service_1 = require("./products.service");
+const create_product_dto_1 = require("./dto/create-product.dto");
+const update_product_dto_1 = require("./dto/update-product.dto");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const roles_guard_1 = require("../auth/roles.guard");
+const roles_decorator_1 = require("../auth/roles.decorator");
 let ProductsController = class ProductsController {
     constructor(productsService) {
         this.productsService = productsService;
@@ -24,6 +29,15 @@ let ProductsController = class ProductsController {
     }
     getOne(id) {
         return this.productsService.findOne(Number(id));
+    }
+    create(createProductDto) {
+        return this.productsService.create(createProductDto);
+    }
+    update(id, updateProductDto) {
+        return this.productsService.update(Number(id), updateProductDto);
+    }
+    remove(id) {
+        return this.productsService.remove(Number(id));
     }
 };
 exports.ProductsController = ProductsController;
@@ -40,6 +54,34 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "getOne", null);
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_product_dto_1.CreateProductDto]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_product_dto_1.UpdateProductDto]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "remove", null);
 exports.ProductsController = ProductsController = __decorate([
     (0, common_1.Controller)('products'),
     __metadata("design:paramtypes", [products_service_1.ProductsService])

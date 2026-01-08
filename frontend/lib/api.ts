@@ -8,7 +8,8 @@ const API = axios.create({
 // Add token to requests if available
 API.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const authStorage = localStorage.getItem('auth-storage')
+    // Check sessionStorage first (for admins), then localStorage (for users)
+    let authStorage = sessionStorage.getItem('auth-storage') || localStorage.getItem('auth-storage')
     if (authStorage) {
       try {
         const auth = JSON.parse(authStorage)
@@ -30,6 +31,7 @@ API.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('auth-storage')
+      sessionStorage.removeItem('auth-storage')
       window.location.href = '/login'
     }
     return Promise.reject(error)
