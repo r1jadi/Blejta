@@ -12,26 +12,48 @@ interface AuthState {
   user: User | null
   token: string | null
   isAuthenticated: boolean
+  isHydrated: boolean // Track if state has been loaded from storage
   login: (user: User, token: string) => void
   logout: () => Promise<void>
   updateUser: (user: User) => void
+  setHydrated: () => void
+  syncAuthState: () => void // Helper to sync isAuthenticated with user/token
 }
 
 // Custom storage that uses localStorage for users and sessionStorage for admins
 const createRoleBasedStorage = () => {
   return {
     getItem: (name: string): string | null => {
+      if (typeof window === 'undefined') return null
       try {
         // Try to get from sessionStorage first (for admins)
-        const sessionData = typeof window !== 'undefined' ? sessionStorage.getItem(name) : null
+        const sessionData = sessionStorage.getItem(name)
         if (sessionData) {
-          const parsed = JSON.parse(sessionData)
-          if (parsed?.state?.user?.role === 'admin') {
-            return sessionData
+          try {
+            const parsed = JSON.parse(sessionData)
+            // Check if it's an admin session
+            if (parsed?.state?.user?.role === 'admin') {
+              return sessionData
+            }
+          } catch (e) {
+            // Invalid JSON in sessionStorage, try localStorage
           }
         }
         // Otherwise get from localStorage (for users)
-        return typeof window !== 'undefined' ? localStorage.getItem(name) : null
+        const localData = localStorage.getItem(name)
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData)
+            // Only return if it's not an admin (admins should be in sessionStorage)
+            if (parsed?.state?.user?.role !== 'admin') {
+              return localData
+            }
+          } catch (e) {
+            // Invalid JSON, return null
+            return null
+          }
+        }
+        return null
       } catch {
         return null
       }
@@ -75,8 +97,16 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      isHydrated: false,
       login: (user, token) => {
         set({ user, token, isAuthenticated: true })
+      },
+      syncAuthState: () => {
+        const state = get()
+        const shouldBeAuthenticated = !!(state.user && state.token)
+        if (state.isAuthenticated !== shouldBeAuthenticated) {
+          set({ isAuthenticated: shouldBeAuthenticated })
+        }
       },
       logout: async () => {
         const { token } = get()
@@ -95,10 +125,29 @@ export const useAuthStore = create<AuthState>()(
       updateUser: (user) => {
         set({ user })
       },
+      setHydrated: () => {
+        set({ isHydrated: true })
+      },
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => createRoleBasedStorage()),
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          if (error) {
+            console.error('Error rehydrating auth state:', error)
+          }
+          // Mark as hydrated and ensure isAuthenticated is set correctly
+          if (state) {
+            // Sync isAuthenticated with user/token state
+            state.syncAuthState()
+            // Set hydrated flag after a small delay to ensure state is ready
+            setTimeout(() => {
+              state.setHydrated()
+            }, 0)
+          }
+        }
+      },
     }
   )
 )

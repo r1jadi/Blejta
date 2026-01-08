@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import AddToCartButton from '../../../components/AddToCartButton'
+import ProductImageCarousel from '../../../components/ProductImageCarousel'
 import { getApiUrl } from '../../../lib/api-url'
 import Link from 'next/link'
 
@@ -21,9 +22,10 @@ export default async function ProductPage({ params }: { params: { id: string } }
     notFound()
   }
 
-  const imageUrl = Array.isArray(product.images) && product.images[0] 
-    ? product.images[0] 
-    : '/placeholder.jpg'
+  // Ensure images is an array
+  const productImages = Array.isArray(product.images) 
+    ? product.images.filter((img: any) => img && img.trim())
+    : []
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -32,13 +34,10 @@ export default async function ProductPage({ params }: { params: { id: string } }
       </Link>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="bg-white rounded-xl overflow-hidden shadow-card">
-          <img 
-            src={imageUrl} 
-            alt={product.name} 
-            className="w-full h-[500px] object-cover" 
-          />
-        </div>
+        <ProductImageCarousel 
+          images={productImages} 
+          productName={product.name}
+        />
         
         <div className="space-y-6">
           <div>

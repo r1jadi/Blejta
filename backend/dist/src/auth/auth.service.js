@@ -15,11 +15,16 @@ const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma.service");
 const bcrypt = require("bcrypt");
 const cart_service_1 = require("../cart/cart.service");
+const email_service_1 = require("../email/email.service");
+const config_1 = require("@nestjs/config");
+const crypto = require("crypto");
 let AuthService = class AuthService {
-    constructor(prisma, jwtService, cartService) {
+    constructor(prisma, jwtService, cartService, emailService, configService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.cartService = cartService;
+        this.emailService = emailService;
+        this.configService = configService;
     }
     async register(registerDto) {
         const { email, password, name } = registerDto;
@@ -108,12 +113,64 @@ let AuthService = class AuthService {
     async logout(userId) {
         return { message: 'Logged out successfully' };
     }
+    async forgotPassword(forgotPasswordDto) {
+        const { email } = forgotPasswordDto;
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+        if (!user) {
+            return { message: 'If an account with that email exists, a password reset link has been sent.' };
+        }
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date();
+        resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetToken,
+                resetTokenExpiry,
+            },
+        });
+        const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+        await this.emailService.sendPasswordResetEmail(email, resetToken, resetUrl);
+        return { message: 'If an account with that email exists, a password reset link has been sent.' };
+    }
+    async resetPassword(resetPasswordDto) {
+        const { token, password } = resetPasswordDto;
+        const user = await this.prisma.user.findFirst({
+            where: {
+                resetToken: token,
+                resetTokenExpiry: {
+                    gt: new Date(),
+                },
+            },
+        });
+        if (!user) {
+            throw new common_1.BadRequestException('Invalid or expired reset token');
+        }
+        if (password.length < 6) {
+            throw new common_1.BadRequestException('Password must be at least 6 characters long');
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                resetToken: null,
+                resetTokenExpiry: null,
+            },
+        });
+        return { message: 'Password has been reset successfully' };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         jwt_1.JwtService,
-        cart_service_1.CartService])
+        cart_service_1.CartService,
+        email_service_1.EmailService,
+        config_1.ConfigService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

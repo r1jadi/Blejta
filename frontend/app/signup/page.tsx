@@ -42,11 +42,30 @@ export default function SignupPage() {
         await loadFromBackend()
       }
       
-      router.push('/')
-      router.refresh()
+      // Wait for Zustand to persist the state to storage
+      // Use a longer delay to ensure storage is written
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Verify state is persisted by checking storage directly
+      const store = useAuthStore.getState()
+      
+      if (store.user && store.token) {
+        // Verify storage was written (users use localStorage)
+        const storedData = localStorage.getItem('auth-storage')
+        
+        if (storedData) {
+          // State is persisted, use router.replace for smooth navigation
+          router.replace('/')
+        } else {
+          // Storage not ready, use hard redirect as fallback
+          window.location.href = '/'
+        }
+      } else {
+        // State not ready, use hard redirect
+        window.location.href = '/'
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.')
-    } finally {
       setLoading(false)
     }
   }

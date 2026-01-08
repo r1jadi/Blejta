@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import API from '../../lib/api'
@@ -8,12 +8,32 @@ import useCart from '../../lib/store'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { user, isAuthenticated, isHydrated, token } = useAuthStore()
   const login = useAuthStore(s => s.login)
   const loadFromBackend = useCart(s => s.loadFromBackend)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isHydrated && isAuthenticated && user && token) {
+      // Verify token is still valid
+      API.get('/auth/me')
+        .then(() => {
+          // Token is valid, redirect based on role
+          if (user.role === 'admin') {
+            router.push('/admin')
+          } else {
+            router.push('/')
+          }
+        })
+        .catch(() => {
+          // Token invalid, allow login
+        })
+    }
+  }, [isHydrated, isAuthenticated, user, token, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,11 +49,34 @@ export default function LoginPage() {
         await loadFromBackend()
       }
       
-      router.push('/')
-      router.refresh()
+      // Wait for Zustand to persist the state to storage
+      // Use a longer delay to ensure storage is written
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Verify state is persisted by checking storage directly
+      const store = useAuthStore.getState()
+      const targetPath = res.data.user.role === 'admin' ? '/admin' : '/'
+      
+      if (store.user && store.token) {
+        // Verify storage was written
+        const storageKey = 'auth-storage'
+        const storedData = res.data.user.role === 'admin' 
+          ? sessionStorage.getItem(storageKey)
+          : localStorage.getItem(storageKey)
+        
+        if (storedData) {
+          // State is persisted, use router.replace for smooth navigation
+          router.replace(targetPath)
+        } else {
+          // Storage not ready, use hard redirect as fallback
+          window.location.href = targetPath
+        }
+      } else {
+        // State not ready, use hard redirect
+        window.location.href = targetPath
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.')
-    } finally {
       setLoading(false)
     }
   }
@@ -69,9 +112,14 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
