@@ -8,7 +8,6 @@ export class CreateOrderDto {
   shippingCost?: number;
   total?: number;
   status?: string;
-  paymentMethod?: string; // "card" or "cash_on_delivery"
   paymentStatus?: string;
   paymentIntentId?: string;
 }

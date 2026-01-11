@@ -4,7 +4,6 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CartService } from '../cart/cart.service';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
@@ -52,17 +51,5 @@ export declare class AuthService {
     }>;
     resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
         message: string;
-    }>;
-    updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<{
-        user: {
-            id: number;
-            email: string;
-            name: string;
-            role: string;
-            createdAt: Date;
-        };
-        token: string;
-        message: string;
-        passwordChanged: boolean;
     }>;
 }

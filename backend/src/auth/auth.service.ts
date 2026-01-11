@@ -6,7 +6,6 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CartService } from '../cart/cart.service';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
@@ -219,94 +218,5 @@ export class AuthService {
     });
 
     return { message: 'Password has been reset successfully' };
-  }
-
-  async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
-    const { email, newPassword, confirmPassword, currentPassword } = updateProfileDto;
-
-    // Find user with password
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
-    }
-
-    // Validate if trying to update password
-    if (newPassword) {
-      if (!confirmPassword) {
-        throw new BadRequestException('Confirm password is required when changing password');
-      }
-      if (newPassword !== confirmPassword) {
-        throw new BadRequestException('New password and confirm password do not match');
-      }
-      if (newPassword.length < 6) {
-        throw new BadRequestException('Password must be at least 6 characters long');
-      }
-    }
-
-    // Check if email is being changed and if it's already in use
-    if (email && email !== user.email) {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (existingUser) {
-        throw new ConflictException('Email is already in use');
-      }
-    }
-
-    // Prepare update data
-    const updateData: any = {};
-    
-    if (email && email !== user.email) {
-      updateData.email = email;
-    }
-
-    if (newPassword) {
-      updateData.password = await bcrypt.hash(newPassword, 10);
-    }
-
-    // Only update if there are changes
-    if (Object.keys(updateData).length === 0) {
-      throw new BadRequestException('No changes to update');
-    }
-
-    // Update user
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
-    });
-
-    // Generate new token if email or password changed
-    const token = this.jwtService.sign(
-      { 
-        sub: updatedUser.id, 
-        email: updatedUser.email, 
-        role: updatedUser.role 
-      },
-      { expiresIn: updatedUser.role === 'admin' ? '1h' : '24h' }
-    );
-
-    return {
-      user: updatedUser,
-      token,
-      message: 'Profile updated successfully',
-      passwordChanged: !!newPassword,
-    };
   }
 }

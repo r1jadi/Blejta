@@ -20,13 +20,6 @@ let OrdersService = class OrdersService {
         return this.prisma.order.create({ data });
     }
     createOrder(createOrderDto) {
-        const paymentMethod = createOrderDto.paymentMethod || 'card';
-        const status = paymentMethod === 'cash_on_delivery'
-            ? 'confirmed'
-            : (createOrderDto.status || 'pending');
-        const paymentStatus = paymentMethod === 'cash_on_delivery'
-            ? 'cash_on_delivery'
-            : (createOrderDto.paymentStatus || 'pending');
         return this.prisma.order.create({
             data: {
                 userId: createOrderDto.userId || null,
@@ -37,9 +30,8 @@ let OrdersService = class OrdersService {
                 subtotal: createOrderDto.subtotal,
                 shippingCost: createOrderDto.shippingCost,
                 total: createOrderDto.total,
-                status,
-                paymentMethod,
-                paymentStatus,
+                status: createOrderDto.status || 'pending',
+                paymentStatus: createOrderDto.paymentStatus || 'pending',
                 paymentIntentId: createOrderDto.paymentIntentId || null,
             }
         });
@@ -114,9 +106,6 @@ let OrdersService = class OrdersService {
         }
         if (updateOrderDto.status !== undefined) {
             updateData.status = updateOrderDto.status;
-        }
-        if (updateOrderDto.paymentMethod !== undefined) {
-            updateData.paymentMethod = updateOrderDto.paymentMethod;
         }
         if (updateOrderDto.paymentStatus !== undefined) {
             updateData.paymentStatus = updateOrderDto.paymentStatus;

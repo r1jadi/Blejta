@@ -51,9 +51,8 @@ model Order {
   shippingCost    Float?
   total           Float?
   status          String   @default("pending")
-  paymentMethod   String   @default("card") // "card" or "cash_on_delivery"
   paymentIntentId String?  @unique
-  paymentStatus   String   @default("pending") // pending, succeeded, failed, canceled, cash_on_delivery
+  paymentStatus   String   @default("pending") // pending, succeeded, failed, canceled
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

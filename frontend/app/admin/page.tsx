@@ -926,26 +926,6 @@ export default function Admin() {
                                 <span className="font-medium">Total:</span>
                                 <span className="text-lg font-bold text-primary-600">{o.total ? o.total.toFixed(2) : '0.00'} €</span>
                               </div>
-                              <div className="flex items-center gap-2 text-gray-700">
-                                <span className="font-medium">Payment:</span>
-                                <span className="flex items-center gap-1">
-                                  {o.paymentMethod === 'cash_on_delivery' ? (
-                                    <>
-                                      <span>💵</span>
-                                      <span>Cash on Delivery</span>
-                                      <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">COD</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span>💳</span>
-                                      <span>Card</span>
-                                      {o.paymentStatus === 'succeeded' && (
-                                        <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">Paid</span>
-                                      )}
-                                    </>
-                                  )}
-                                </span>
-                              </div>
                               <div className="flex items-center gap-2 text-gray-600 text-xs">
                                 <span className="font-medium">Items:</span>
                                 <span>{Array.isArray(o.items) ? o.items.length : 0}</span>

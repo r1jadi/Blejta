@@ -20,7 +20,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
@@ -37,7 +36,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
@@ -60,7 +58,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
@@ -77,7 +74,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
@@ -100,7 +96,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
@@ -123,7 +118,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
@@ -140,7 +134,6 @@ export declare class OrdersController {
         shippingCost: number | null;
         total: number | null;
         status: string;
-        paymentMethod: string;
         paymentIntentId: string | null;
         paymentStatus: string;
         userId: number | null;
