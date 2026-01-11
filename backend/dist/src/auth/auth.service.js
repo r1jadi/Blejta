@@ -163,6 +163,70 @@ let AuthService = class AuthService {
         });
         return { message: 'Password has been reset successfully' };
     }
+    async updateProfile(userId, updateProfileDto) {
+        const { email, newPassword, confirmPassword, currentPassword } = updateProfileDto;
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            throw new common_1.UnauthorizedException('Current password is incorrect');
+        }
+        if (newPassword) {
+            if (!confirmPassword) {
+                throw new common_1.BadRequestException('Confirm password is required when changing password');
+            }
+            if (newPassword !== confirmPassword) {
+                throw new common_1.BadRequestException('New password and confirm password do not match');
+            }
+            if (newPassword.length < 6) {
+                throw new common_1.BadRequestException('Password must be at least 6 characters long');
+            }
+        }
+        if (email && email !== user.email) {
+            const existingUser = await this.prisma.user.findUnique({
+                where: { email },
+            });
+            if (existingUser) {
+                throw new common_1.ConflictException('Email is already in use');
+            }
+        }
+        const updateData = {};
+        if (email && email !== user.email) {
+            updateData.email = email;
+        }
+        if (newPassword) {
+            updateData.password = await bcrypt.hash(newPassword, 10);
+        }
+        if (Object.keys(updateData).length === 0) {
+            throw new common_1.BadRequestException('No changes to update');
+        }
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                createdAt: true,
+            },
+        });
+        const token = this.jwtService.sign({
+            sub: updatedUser.id,
+            email: updatedUser.email,
+            role: updatedUser.role
+        }, { expiresIn: updatedUser.role === 'admin' ? '1h' : '24h' });
+        return {
+            user: updatedUser,
+            token,
+            message: 'Profile updated successfully',
+            passwordChanged: !!newPassword,
+        };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
