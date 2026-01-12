@@ -12,6 +12,12 @@ export declare class ProductsService {
         description: string | null;
         price: number;
         images: import("@prisma/client/runtime/library").JsonValue;
+        productType: string;
+        availableSizes: import("@prisma/client/runtime/library").JsonValue | null;
+        availableModels: import("@prisma/client/runtime/library").JsonValue | null;
+        availableColors: import("@prisma/client/runtime/library").JsonValue | null;
+        requiresFootSize: boolean;
+        availableFootSizes: import("@prisma/client/runtime/library").JsonValue | null;
     }[]>;
     findOne(id: number): import(".prisma/client").Prisma.Prisma__ProductClient<{
         id: number;
@@ -21,7 +27,14 @@ export declare class ProductsService {
         description: string | null;
         price: number;
         images: import("@prisma/client/runtime/library").JsonValue;
+        productType: string;
+        availableSizes: import("@prisma/client/runtime/library").JsonValue | null;
+        availableModels: import("@prisma/client/runtime/library").JsonValue | null;
+        availableColors: import("@prisma/client/runtime/library").JsonValue | null;
+        requiresFootSize: boolean;
+        availableFootSizes: import("@prisma/client/runtime/library").JsonValue | null;
     }, null, import("@prisma/client/runtime/library").DefaultArgs>;
+    private validateVariants;
     create(createProductDto: CreateProductDto): import(".prisma/client").Prisma.Prisma__ProductClient<{
         id: number;
         name: string;
@@ -30,6 +43,12 @@ export declare class ProductsService {
         description: string | null;
         price: number;
         images: import("@prisma/client/runtime/library").JsonValue;
+        productType: string;
+        availableSizes: import("@prisma/client/runtime/library").JsonValue | null;
+        availableModels: import("@prisma/client/runtime/library").JsonValue | null;
+        availableColors: import("@prisma/client/runtime/library").JsonValue | null;
+        requiresFootSize: boolean;
+        availableFootSizes: import("@prisma/client/runtime/library").JsonValue | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
     update(id: number, updateProductDto: UpdateProductDto): Promise<{
         id: number;
@@ -39,6 +58,12 @@ export declare class ProductsService {
         description: string | null;
         price: number;
         images: import("@prisma/client/runtime/library").JsonValue;
+        productType: string;
+        availableSizes: import("@prisma/client/runtime/library").JsonValue | null;
+        availableModels: import("@prisma/client/runtime/library").JsonValue | null;
+        availableColors: import("@prisma/client/runtime/library").JsonValue | null;
+        requiresFootSize: boolean;
+        availableFootSizes: import("@prisma/client/runtime/library").JsonValue | null;
     }>;
     remove(id: number): Promise<{
         id: number;
@@ -48,5 +73,11 @@ export declare class ProductsService {
         description: string | null;
         price: number;
         images: import("@prisma/client/runtime/library").JsonValue;
+        productType: string;
+        availableSizes: import("@prisma/client/runtime/library").JsonValue | null;
+        availableModels: import("@prisma/client/runtime/library").JsonValue | null;
+        availableColors: import("@prisma/client/runtime/library").JsonValue | null;
+        requiresFootSize: boolean;
+        availableFootSizes: import("@prisma/client/runtime/library").JsonValue | null;
     }>;
 }

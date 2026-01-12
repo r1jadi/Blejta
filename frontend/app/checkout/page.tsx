@@ -140,7 +140,14 @@ export default function CheckoutPage() {
     setLoading(true)
     try {
       const payload = {
-        items: items.map(i => ({ productId: i.product.id, qty: i.qty, price: i.product.price })),
+        items: items.map(i => ({ 
+          productId: i.product.id, 
+          qty: i.qty, 
+          price: i.product.price,
+          variant: i.variant,
+          color: i.color,
+          footSize: i.footSize
+        })),
         name,
         phone,
         address,

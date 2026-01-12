@@ -22,13 +22,19 @@ model User {
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  price       Float
-  images      Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?
+  price           Float
+  images          Json
+  productType     String   @default("GENERIC") // CLOTHING, PHONE_CASE, GENERIC
+  availableSizes  Json?    // Array of sizes for CLOTHING: ["XS", "S", "M", "L", "XL", "XXL"]
+  availableModels Json?    // Array of iPhone models for PHONE_CASE
+  availableColors Json?    // Array of colors for all product types: ["Red", "Blue", "Black", etc.]
+  requiresFootSize Boolean  @default(false) // Whether product requires foot size selection
+  availableFootSizes Json? // Array of European foot sizes: ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45"]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Cart {

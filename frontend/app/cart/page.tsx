@@ -56,6 +56,23 @@ export default function CartPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 mb-1">{i.product.name}</h3>
+                    <div className="text-sm text-gray-500 mb-1 space-y-0.5">
+                      {i.variant && (
+                        <div>
+                          {i.variant.type === 'size' ? 'Size' : 'Model'}: <span className="font-medium">{i.variant.value}</span>
+                        </div>
+                      )}
+                      {i.color && (
+                        <div>
+                          Color: <span className="font-medium">{i.color}</span>
+                        </div>
+                      )}
+                      {i.footSize && (
+                        <div>
+                          Foot Size (EU): <span className="font-medium">{i.footSize}</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-600">
                       {i.qty} × {i.product.price.toFixed(2)} € = {(i.qty * i.product.price).toFixed(2)} €
                     </div>

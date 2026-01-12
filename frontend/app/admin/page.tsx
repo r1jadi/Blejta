@@ -34,7 +34,13 @@ export default function Admin() {
     name: '',
     description: '',
     price: '',
-    images: [''] as string[]
+    images: [''] as string[],
+    productType: 'GENERIC' as 'CLOTHING' | 'PHONE_CASE' | 'GENERIC',
+    availableSizes: [] as string[],
+    availableModels: [] as string[],
+    availableColors: [] as string[],
+    requiresFootSize: false,
+    availableFootSizes: [] as string[]
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -46,7 +52,13 @@ export default function Admin() {
     name: '',
     description: '',
     price: '',
-    images: [''] as string[]
+    images: [''] as string[],
+    productType: 'GENERIC' as 'CLOTHING' | 'PHONE_CASE' | 'GENERIC',
+    availableSizes: [] as string[],
+    availableModels: [] as string[],
+    availableColors: [] as string[],
+    requiresFootSize: false,
+    availableFootSizes: [] as string[]
   })
   const [updating, setUpdating] = useState(false)
   const [updateError, setUpdateError] = useState('')
@@ -218,11 +230,39 @@ export default function Admin() {
         throw new Error('At least one image URL is required')
       }
 
-      const payload = {
+      const payload: any = {
         name: productForm.name.trim(),
         description: productForm.description.trim() || undefined,
         price: parseFloat(productForm.price),
-        images: validImages
+        images: validImages,
+        productType: productForm.productType
+      }
+
+      // Add variant fields based on product type
+      if (productForm.productType === 'CLOTHING') {
+        if (productForm.availableSizes.length === 0) {
+          throw new Error('At least one size must be selected for CLOTHING products')
+        }
+        payload.availableSizes = productForm.availableSizes
+      } else if (productForm.productType === 'PHONE_CASE') {
+        if (productForm.availableModels.length === 0) {
+          throw new Error('At least one iPhone model must be selected for PHONE_CASE products')
+        }
+        payload.availableModels = productForm.availableModels
+      }
+
+      // Add color (available for all product types)
+      if (productForm.availableColors.length > 0) {
+        payload.availableColors = productForm.availableColors
+      }
+
+      // Add foot size if required
+      if (productForm.requiresFootSize) {
+        if (productForm.availableFootSizes.length === 0) {
+          throw new Error('At least one foot size must be selected when foot size is required')
+        }
+        payload.requiresFootSize = true
+        payload.availableFootSizes = productForm.availableFootSizes
       }
 
       await API.post('/products', payload)
@@ -232,7 +272,13 @@ export default function Admin() {
         name: '',
         description: '',
         price: '',
-        images: ['']
+        images: [''],
+        productType: 'GENERIC',
+        availableSizes: [],
+        availableModels: [],
+        availableColors: [],
+        requiresFootSize: false,
+        availableFootSizes: []
       })
       setSubmitSuccess(true)
       
@@ -256,7 +302,13 @@ export default function Admin() {
       price: product.price?.toString() || '',
       images: Array.isArray(product.images) && product.images.length > 0 
         ? product.images 
-        : ['']
+        : [''],
+      productType: product.productType || 'GENERIC',
+      availableSizes: Array.isArray(product.availableSizes) ? product.availableSizes : [],
+      availableModels: Array.isArray(product.availableModels) ? product.availableModels : [],
+      availableColors: Array.isArray(product.availableColors) ? product.availableColors : [],
+      requiresFootSize: product.requiresFootSize || false,
+      availableFootSizes: Array.isArray(product.availableFootSizes) ? product.availableFootSizes : []
     })
     setUpdateError('')
     setUpdateSuccess(false)
@@ -268,7 +320,13 @@ export default function Admin() {
       name: '',
       description: '',
       price: '',
-      images: ['']
+      images: [''],
+      productType: 'GENERIC',
+      availableSizes: [],
+      availableModels: [],
+      availableColors: [],
+      requiresFootSize: false,
+      availableFootSizes: []
     })
     setUpdateError('')
     setUpdateSuccess(false)
@@ -316,11 +374,39 @@ export default function Admin() {
         throw new Error('At least one image URL is required')
       }
 
-      const payload = {
+      const payload: any = {
         name: editForm.name.trim(),
         description: editForm.description.trim() || undefined,
         price: parseFloat(editForm.price),
-        images: validImages
+        images: validImages,
+        productType: editForm.productType
+      }
+
+      // Add variant fields based on product type
+      if (editForm.productType === 'CLOTHING') {
+        if (editForm.availableSizes.length === 0) {
+          throw new Error('At least one size must be selected for CLOTHING products')
+        }
+        payload.availableSizes = editForm.availableSizes
+      } else if (editForm.productType === 'PHONE_CASE') {
+        if (editForm.availableModels.length === 0) {
+          throw new Error('At least one iPhone model must be selected for PHONE_CASE products')
+        }
+        payload.availableModels = editForm.availableModels
+      }
+
+      // Add color (available for all product types)
+      if (editForm.availableColors.length > 0) {
+        payload.availableColors = editForm.availableColors
+      }
+
+      // Add foot size if required
+      if (editForm.requiresFootSize) {
+        if (editForm.availableFootSizes.length === 0) {
+          throw new Error('At least one foot size must be selected when foot size is required')
+        }
+        payload.requiresFootSize = true
+        payload.availableFootSizes = editForm.availableFootSizes
       }
 
       await API.put(`/products/${editingProductId}`, payload)
@@ -1249,6 +1335,233 @@ export default function Admin() {
                 </div>
 
                 <div>
+                  <label htmlFor="productType" className="block text-sm font-medium text-gray-700 mb-1">
+                    Product Type *
+                  </label>
+                  <select
+                    id="productType"
+                    value={productForm.productType}
+                    onChange={(e) => {
+                      const newType = e.target.value as 'CLOTHING' | 'PHONE_CASE' | 'GENERIC'
+                      setProductForm(prev => ({ 
+                        ...prev, 
+                        productType: newType,
+                        availableSizes: newType !== 'CLOTHING' ? [] : prev.availableSizes,
+                        availableModels: newType !== 'PHONE_CASE' ? [] : prev.availableModels
+                      }))
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    required
+                  >
+                    <option value="GENERIC">Generic (No Size/Model)</option>
+                    <option value="CLOTHING">Clothing (Sizes)</option>
+                    <option value="PHONE_CASE">Phone Case (iPhone Models)</option>
+                  </select>
+                </div>
+
+                {productForm.productType === 'CLOTHING' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Available Sizes * (Select at least one)
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => (
+                        <label key={size} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={productForm.availableSizes.includes(size)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableSizes: [...prev.availableSizes, size]
+                                }))
+                              } else {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableSizes: prev.availableSizes.filter(s => s !== size)
+                                }))
+                              }
+                            }}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">{size}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {productForm.productType === 'PHONE_CASE' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Available iPhone Models * (Select at least one)
+                    </label>
+                    <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
+                      {[
+                        'iPhone 7 Plus', 'iPhone 8 Plus', 'iPhone X', 'iPhone XR',
+                        'iPhone 11', 'iPhone 11 Pro', 'iPhone 11 Pro Max',
+                        'iPhone 12', 'iPhone 12 Pro', 'iPhone 12 Pro Max',
+                        'iPhone 13', 'iPhone 13 Pro', 'iPhone 13 Pro Max',
+                        'iPhone 14', 'iPhone 14 Pro', 'iPhone 14 Pro Max',
+                        'iPhone 15', 'iPhone 15 Pro', 'iPhone 15 Pro Max',
+                        'iPhone 16', 'iPhone 16 Pro', 'iPhone 16 Pro Max',
+                        'iPhone 17', 'iPhone 17 Pro', 'iPhone 17 Pro Max'
+                      ].map(model => (
+                        <label key={model} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={productForm.availableModels.includes(model)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableModels: [...prev.availableModels, model]
+                                }))
+                              } else {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableModels: prev.availableModels.filter(m => m !== model)
+                                }))
+                              }
+                            }}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">{model}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Color Selection - Available for all product types */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Available Colors (Optional - for all product types)
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {['Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Purple', 'Orange', 'Gray', 'Brown', 'Navy'].map(color => (
+                        <label key={color} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={productForm.availableColors.includes(color)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableColors: [...prev.availableColors, color]
+                                }))
+                              } else {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableColors: prev.availableColors.filter(c => c !== color)
+                                }))
+                              }
+                            }}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">{color}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Add custom color (press Enter)"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            const input = e.target as HTMLInputElement
+                            const color = input.value.trim()
+                            if (color && !productForm.availableColors.includes(color)) {
+                              setProductForm(prev => ({
+                                ...prev,
+                                availableColors: [...prev.availableColors, color]
+                              }))
+                              input.value = ''
+                            }
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                      />
+                    </div>
+                    {productForm.availableColors.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {productForm.availableColors.map(color => (
+                          <span key={color} className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
+                            {color}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProductForm(prev => ({
+                                  ...prev,
+                                  availableColors: prev.availableColors.filter(c => c !== color)
+                                }))
+                              }}
+                              className="text-primary-600 hover:text-primary-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Foot Size Selection */}
+                <div>
+                  <label className="flex items-center space-x-2 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={productForm.requiresFootSize}
+                      onChange={(e) => {
+                        setProductForm(prev => ({
+                          ...prev,
+                          requiresFootSize: e.target.checked,
+                          availableFootSizes: e.target.checked ? prev.availableFootSizes : []
+                        }))
+                      }}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Requires Foot Size (EUROPE)</span>
+                  </label>
+                  {productForm.requiresFootSize && (
+                    <div className="mt-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Available Foot Sizes (EU) * (Select at least one)
+                      </label>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                        {['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48'].map(size => (
+                          <label key={size} className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={productForm.availableFootSizes.includes(size)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setProductForm(prev => ({
+                                    ...prev,
+                                    availableFootSizes: [...prev.availableFootSizes, size]
+                                  }))
+                                } else {
+                                  setProductForm(prev => ({
+                                    ...prev,
+                                    availableFootSizes: prev.availableFootSizes.filter(s => s !== size)
+                                  }))
+                                }
+                              }}
+                              className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                            />
+                            <span className="text-sm text-gray-700">{size}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Image URLs *
                   </label>
@@ -1419,6 +1732,233 @@ export default function Admin() {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           required
                         />
+                      </div>
+
+                      <div>
+                        <label htmlFor="edit-productType" className="block text-sm font-medium text-gray-700 mb-1">
+                          Product Type *
+                        </label>
+                        <select
+                          id="edit-productType"
+                          value={editForm.productType}
+                          onChange={(e) => {
+                            const newType = e.target.value as 'CLOTHING' | 'PHONE_CASE' | 'GENERIC'
+                            setEditForm(prev => ({ 
+                              ...prev, 
+                              productType: newType,
+                              availableSizes: newType !== 'CLOTHING' ? [] : prev.availableSizes,
+                              availableModels: newType !== 'PHONE_CASE' ? [] : prev.availableModels
+                            }))
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          required
+                        >
+                          <option value="GENERIC">Generic (No Size/Model)</option>
+                          <option value="CLOTHING">Clothing (Sizes)</option>
+                          <option value="PHONE_CASE">Phone Case (iPhone Models)</option>
+                        </select>
+                      </div>
+
+                      {editForm.productType === 'CLOTHING' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Available Sizes * (Select at least one)
+                          </label>
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => (
+                              <label key={size} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.availableSizes.includes(size)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableSizes: [...prev.availableSizes, size]
+                                      }))
+                                    } else {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableSizes: prev.availableSizes.filter(s => s !== size)
+                                      }))
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                />
+                                <span className="text-sm text-gray-700">{size}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {editForm.productType === 'PHONE_CASE' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Available iPhone Models * (Select at least one)
+                          </label>
+                          <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
+                            {[
+                              'iPhone 7 Plus', 'iPhone 8 Plus', 'iPhone X', 'iPhone XR',
+                              'iPhone 11', 'iPhone 11 Pro', 'iPhone 11 Pro Max',
+                              'iPhone 12', 'iPhone 12 Pro', 'iPhone 12 Pro Max',
+                              'iPhone 13', 'iPhone 13 Pro', 'iPhone 13 Pro Max',
+                              'iPhone 14', 'iPhone 14 Pro', 'iPhone 14 Pro Max',
+                              'iPhone 15', 'iPhone 15 Pro', 'iPhone 15 Pro Max',
+                              'iPhone 16', 'iPhone 16 Pro', 'iPhone 16 Pro Max',
+                              'iPhone 17', 'iPhone 17 Pro', 'iPhone 17 Pro Max'
+                            ].map(model => (
+                              <label key={model} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.availableModels.includes(model)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableModels: [...prev.availableModels, model]
+                                      }))
+                                    } else {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableModels: prev.availableModels.filter(m => m !== model)
+                                      }))
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                />
+                                <span className="text-sm text-gray-700">{model}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Color Selection - Available for all product types */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Available Colors (Optional - for all product types)
+                        </label>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {['Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Purple', 'Orange', 'Gray', 'Brown', 'Navy'].map(color => (
+                              <label key={color} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.availableColors.includes(color)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableColors: [...prev.availableColors, color]
+                                      }))
+                                    } else {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableColors: prev.availableColors.filter(c => c !== color)
+                                      }))
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                />
+                                <span className="text-sm text-gray-700">{color}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Add custom color (press Enter)"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  const input = e.target as HTMLInputElement
+                                  const color = input.value.trim()
+                                  if (color && !editForm.availableColors.includes(color)) {
+                                    setEditForm(prev => ({
+                                      ...prev,
+                                      availableColors: [...prev.availableColors, color]
+                                    }))
+                                    input.value = ''
+                                  }
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                            />
+                          </div>
+                          {editForm.availableColors.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {editForm.availableColors.map(color => (
+                                <span key={color} className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
+                                  {color}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditForm(prev => ({
+                                        ...prev,
+                                        availableColors: prev.availableColors.filter(c => c !== color)
+                                      }))
+                                    }}
+                                    className="text-primary-600 hover:text-primary-800"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Foot Size Selection */}
+                      <div>
+                        <label className="flex items-center space-x-2 cursor-pointer mb-2">
+                          <input
+                            type="checkbox"
+                            checked={editForm.requiresFootSize}
+                            onChange={(e) => {
+                              setEditForm(prev => ({
+                                ...prev,
+                                requiresFootSize: e.target.checked,
+                                availableFootSizes: e.target.checked ? prev.availableFootSizes : []
+                              }))
+                            }}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Requires Foot Size (EUROPE)</span>
+                        </label>
+                        {editForm.requiresFootSize && (
+                          <div className="mt-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Available Foot Sizes (EU) * (Select at least one)
+                            </label>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                              {['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48'].map(size => (
+                                <label key={size} className="flex items-center space-x-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={editForm.availableFootSizes.includes(size)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setEditForm(prev => ({
+                                          ...prev,
+                                          availableFootSizes: [...prev.availableFootSizes, size]
+                                        }))
+                                      } else {
+                                        setEditForm(prev => ({
+                                          ...prev,
+                                          availableFootSizes: prev.availableFootSizes.filter(s => s !== size)
+                                        }))
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                  />
+                                  <span className="text-sm text-gray-700">{size}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div>

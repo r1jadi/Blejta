@@ -3,4 +3,10 @@ export declare class UpdateProductDto {
     description?: string;
     price?: number;
     images?: string[];
+    productType?: string;
+    availableSizes?: string[];
+    availableModels?: string[];
+    availableColors?: string[];
+    requiresFootSize?: boolean;
+    availableFootSizes?: string[];
 }
