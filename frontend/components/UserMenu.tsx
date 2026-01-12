@@ -72,6 +72,13 @@ export default function UserMenu() {
               </span>
             )}
           </div>
+          <Link
+            href="/profile"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Edit Profile
+          </Link>
           {user.role === 'admin' && (
             <Link
               href="/admin"

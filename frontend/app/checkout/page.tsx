@@ -109,11 +109,13 @@ function CheckoutForm({ orderId, total }: { orderId: number; total: number }) {
 
 export default function CheckoutPage() {
   const items = useCart(s => s.items)
+  const clear = useCart(s => s.clear)
   const router = useRouter()
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash_on_delivery'>('card')
   const [orderId, setOrderId] = useState<number | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -124,10 +126,10 @@ export default function CheckoutPage() {
   const total = subtotal + shipping
 
   useEffect(() => {
-    if (step === 'payment' && orderId && !clientSecret) {
+    if (step === 'payment' && orderId && paymentMethod === 'card' && !clientSecret) {
       createPaymentIntent()
     }
-  }, [step, orderId])
+  }, [step, orderId, paymentMethod])
 
   async function createOrder() {
     if (!name || !phone || !address) {
@@ -145,11 +147,19 @@ export default function CheckoutPage() {
         subtotal,
         shippingCost: shipping,
         total,
-        status: 'pending'
+        status: 'pending',
+        paymentMethod: paymentMethod,
       }
       const res = await API.post('/orders', payload)
       setOrderId(res.data.id)
-      setStep('payment')
+      
+      // If cash on delivery, skip payment and go directly to success
+      if (paymentMethod === 'cash_on_delivery') {
+        clear()
+        router.push(`/order-success/${res.data.id}`)
+      } else {
+        setStep('payment')
+      }
     } catch (e) {
       console.error('Order error:', e)
       alert('Error creating order. Please try again.')
@@ -198,48 +208,118 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           {step === 'info' ? (
-            <div className="bg-white rounded-xl shadow-card p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Delivery Information</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                  <input 
-                    value={name} 
-                    onChange={e => setName(e.target.value)} 
-                    placeholder="John Doe" 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all" 
-                    required
-                  />
+            <div className="space-y-6">
+              {/* Delivery Information */}
+              <div className="bg-white rounded-xl shadow-card p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Delivery Information</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input 
+                      value={name} 
+                      onChange={e => setName(e.target.value)} 
+                      placeholder="John Doe" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all" 
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input 
+                      value={phone} 
+                      onChange={e => setPhone(e.target.value)} 
+                      placeholder="+383 44 123 456" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all" 
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
+                    <textarea 
+                      value={address} 
+                      onChange={e => setAddress(e.target.value)} 
+                      placeholder="Street address, City, Postal code" 
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-none" 
+                      rows={4}
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  <input 
-                    value={phone} 
-                    onChange={e => setPhone(e.target.value)} 
-                    placeholder="+383 44 123 456" 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all" 
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
-                  <textarea 
-                    value={address} 
-                    onChange={e => setAddress(e.target.value)} 
-                    placeholder="Street address, City, Postal code" 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-none" 
-                    rows={4}
-                    required
-                  />
-                </div>
-                <button
-                  onClick={createOrder}
-                  disabled={loading}
-                  className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Creating order...' : 'Continue to Payment'}
-                </button>
               </div>
+
+              {/* Payment Method Selection */}
+              <div className="bg-white rounded-xl shadow-card p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Payment Method</h2>
+                <div className="space-y-3">
+                  <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    paymentMethod === 'card' 
+                      ? 'border-primary-600 bg-primary-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="card"
+                      checked={paymentMethod === 'card'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'card')}
+                      className="w-5 h-5 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="ml-4 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">💳</span>
+                        <div>
+                          <p className="font-semibold text-gray-900">Credit/Debit Card</p>
+                          <p className="text-sm text-gray-600">Pay securely online with your card</p>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    paymentMethod === 'cash_on_delivery' 
+                      ? 'border-primary-600 bg-primary-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cash_on_delivery"
+                      checked={paymentMethod === 'cash_on_delivery'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'cash_on_delivery')}
+                      className="w-5 h-5 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="ml-4 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">💵</span>
+                        <div>
+                          <p className="font-semibold text-gray-900">Cash on Delivery</p>
+                          <p className="text-sm text-gray-600">Pay with cash when you receive your order</p>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <button
+                onClick={createOrder}
+                disabled={loading}
+                className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : paymentMethod === 'cash_on_delivery' ? (
+                  'Place Order'
+                ) : (
+                  'Continue to Payment'
+                )}
+              </button>
             </div>
           ) : (
             clientSecret && stripePromise ? (
@@ -291,6 +371,14 @@ export default function CheckoutPage() {
                 <span className="text-primary-600">{total.toFixed(2)} €</span>
               </div>
             </div>
+            
+            {paymentMethod === 'cash_on_delivery' && step === 'info' && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Cash on Delivery:</span> You will pay {total.toFixed(2)} € in cash when you receive your order.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

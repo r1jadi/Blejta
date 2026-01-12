@@ -8,6 +8,7 @@ export class UpdateOrderDto {
   shippingCost?: number;
   total?: number;
   status?: string;
+  paymentMethod?: string;
   paymentStatus?: string;
   paymentIntentId?: string;
 }

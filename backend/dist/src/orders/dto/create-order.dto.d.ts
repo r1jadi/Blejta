@@ -8,6 +8,7 @@ export declare class CreateOrderDto {
     shippingCost?: number;
     total?: number;
     status?: string;
+    paymentMethod?: string;
     paymentStatus?: string;
     paymentIntentId?: string;
 }
