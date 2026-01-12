@@ -179,10 +179,27 @@ export default function CheckoutPage() {
       setClientSecret(res.data.clientSecret)
     } catch (e: any) {
       console.error('Payment intent error:', e)
+      
+      // Check if error is about Stripe not being configured
       const errorMessage = e.response?.data?.message || e.message || 'Error initializing payment'
-      alert(`Payment Error: ${errorMessage}. Please configure Stripe keys or try again later.`)
-      setStep('info')
-      setClientSecret(null)
+      const isStripeNotConfigured = errorMessage.toLowerCase().includes('stripe is not configured') || 
+                                     errorMessage.toLowerCase().includes('stripe_secret_key')
+      
+      if (isStripeNotConfigured) {
+        // Show user-friendly message and suggest cash on delivery
+        alert(
+          'Card payments are not available because Stripe is not configured.\n\n' +
+          'Please go back and select "Cash on Delivery" as your payment method.\n\n' +
+          'To enable card payments, configure STRIPE_SECRET_KEY in your backend .env file.'
+        )
+        // Go back to info step so user can select cash on delivery
+        setStep('info')
+        setClientSecret(null)
+      } else {
+        alert(`Payment Error: ${errorMessage}. Please try again later.`)
+        setStep('info')
+        setClientSecret(null)
+      }
     }
   }
 

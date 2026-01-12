@@ -22,7 +22,10 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            config_1.ConfigModule.forRoot(),
+            config_1.ConfigModule.forRoot({
+                envFilePath: ['.env', '../.env', '../../.env'],
+                isGlobal: true,
+            }),
             products_module_1.ProductsModule,
             orders_module_1.OrdersModule,
             auth_module_1.AuthModule,

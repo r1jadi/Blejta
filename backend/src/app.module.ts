@@ -10,7 +10,10 @@ import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      envFilePath: ['.env', '../.env', '../../.env'], // Look for .env in current dir, parent, and grandparent
+      isGlobal: true,
+    }),
     ProductsModule,
     OrdersModule,
     AuthModule,

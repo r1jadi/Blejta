@@ -18,7 +18,23 @@ let PaymentsService = class PaymentsService {
     constructor(configService, prisma) {
         this.configService = configService;
         this.prisma = prisma;
-        const secretKey = this.configService.get('STRIPE_SECRET_KEY');
+        let secretKey = this.configService.get('STRIPE_SECRET_KEY') || process.env.STRIPE_SECRET_KEY;
+        if (!secretKey || secretKey === 'sk_test_your_stripe_secret_key_here') {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const envPath = path.join(process.cwd(), '.env');
+                if (fs.existsSync(envPath)) {
+                    const envContent = fs.readFileSync(envPath, 'utf8');
+                    const match = envContent.match(/STRIPE_SECRET_KEY=(.+)/);
+                    if (match && match[1]) {
+                        secretKey = match[1].trim().replace(/^["']|["']$/g, '');
+                    }
+                }
+            }
+            catch (e) {
+            }
+        }
         if (secretKey && secretKey !== 'sk_test_your_stripe_secret_key_here') {
             this.stripe = new stripe_1.default(secretKey, {
                 apiVersion: '2023-10-16',
@@ -30,6 +46,12 @@ let PaymentsService = class PaymentsService {
             throw new common_1.BadRequestException('Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.');
         }
         try {
+            const order = await this.prisma.order.findUnique({
+                where: { id: orderId },
+            });
+            if (!order) {
+                throw new common_1.BadRequestException(`Order with ID ${orderId} not found`);
+            }
             const amountInCents = Math.round(amount * 100);
             const paymentIntent = await this.stripe.paymentIntents.create({
                 amount: amountInCents,

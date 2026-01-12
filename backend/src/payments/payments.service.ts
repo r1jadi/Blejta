@@ -11,7 +11,27 @@ export class PaymentsService {
     private configService: ConfigService,
     private prisma: PrismaService,
   ) {
-    const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    // Try multiple sources: ConfigService, process.env, and direct .env file read
+    let secretKey = this.configService.get<string>('STRIPE_SECRET_KEY') || process.env.STRIPE_SECRET_KEY;
+    
+    // If still not found, try reading .env file directly (for cases where ConfigModule doesn't load it)
+    if (!secretKey || secretKey === 'sk_test_your_stripe_secret_key_here') {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const envPath = path.join(process.cwd(), '.env');
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf8');
+          const match = envContent.match(/STRIPE_SECRET_KEY=(.+)/);
+          if (match && match[1]) {
+            secretKey = match[1].trim().replace(/^["']|["']$/g, ''); // Remove quotes if present
+          }
+        }
+      } catch (e) {
+        // Ignore errors reading .env file
+      }
+    }
+    
     if (secretKey && secretKey !== 'sk_test_your_stripe_secret_key_here') {
       this.stripe = new Stripe(secretKey, {
         apiVersion: '2023-10-16',
@@ -26,6 +46,15 @@ export class PaymentsService {
     }
     
     try {
+      // Check if order exists first
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+      });
+      
+      if (!order) {
+        throw new BadRequestException(`Order with ID ${orderId} not found`);
+      }
+      
       // Convert amount to cents (Stripe uses smallest currency unit)
       const amountInCents = Math.round(amount * 100);
 
