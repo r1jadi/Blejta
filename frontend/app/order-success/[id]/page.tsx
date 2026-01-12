@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import API from '../../../lib/api'
 
@@ -15,17 +15,18 @@ interface Order {
   createdAt: string
 }
 
-export default function Success({ params }: { params: { id: string } }) {
+export default function Success({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchOrder()
-  }, [params.id])
+  }, [id])
 
   async function fetchOrder() {
     try {
-      const res = await API.get(`/orders/${params.id}`)
+      const res = await API.get(`/orders/${id}`)
       setOrder(res.data)
     } catch (err) {
       console.error('Error fetching order:', err)
@@ -56,7 +57,7 @@ export default function Success({ params }: { params: { id: string } }) {
           
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Order Placed Successfully!</h1>
           <p className="text-lg text-gray-600 mb-2">
-            Your order <span className="font-semibold text-primary-600">#{params.id}</span> has been confirmed.
+            Your order <span className="font-semibold text-primary-600">#{id}</span> has been confirmed.
           </p>
         </div>
 
