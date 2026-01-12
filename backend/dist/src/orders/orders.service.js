@@ -17,7 +17,23 @@ let OrdersService = class OrdersService {
         this.prisma = prisma;
     }
     create(data) {
-        return this.prisma.order.create({ data });
+        if (!data.userId) {
+            throw new Error('User ID is required. User must be authenticated to place an order.');
+        }
+        const paymentMethod = data.paymentMethod || 'card';
+        const status = paymentMethod === 'cash_on_delivery'
+            ? 'confirmed'
+            : (data.status || 'pending');
+        const paymentStatus = paymentMethod === 'cash_on_delivery'
+            ? 'cash_on_delivery'
+            : (data.paymentStatus || 'pending');
+        return this.prisma.order.create({
+            data: {
+                ...data,
+                status,
+                paymentStatus,
+            }
+        });
     }
     createOrder(createOrderDto) {
         const paymentMethod = createOrderDto.paymentMethod || 'card';
@@ -27,9 +43,12 @@ let OrdersService = class OrdersService {
         const paymentStatus = paymentMethod === 'cash_on_delivery'
             ? 'cash_on_delivery'
             : (createOrderDto.paymentStatus || 'pending');
+        if (!createOrderDto.userId) {
+            throw new Error('User ID is required. User must be authenticated to place an order.');
+        }
         return this.prisma.order.create({
             data: {
-                userId: createOrderDto.userId || null,
+                userId: createOrderDto.userId,
                 items: createOrderDto.items,
                 name: createOrderDto.name,
                 address: createOrderDto.address,

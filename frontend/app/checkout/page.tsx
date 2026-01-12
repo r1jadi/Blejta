@@ -10,6 +10,8 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import useCart from '../../lib/store'
 import API from '../../lib/api'
+import { useAuthStore } from '../../lib/auth-store'
+import AuthGuard from '../../components/AuthGuard'
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -107,7 +109,7 @@ function CheckoutForm({ orderId, total }: { orderId: number; total: number }) {
   )
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const items = useCart(s => s.items)
   const clear = useCart(s => s.clear)
   const router = useRouter()
@@ -120,6 +122,7 @@ export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'info' | 'payment'>('info')
+  const { user } = useAuthStore()
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0)
   const shipping = 0
@@ -407,5 +410,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <AuthGuard>
+      <CheckoutContent />
+    </AuthGuard>
   )
 }

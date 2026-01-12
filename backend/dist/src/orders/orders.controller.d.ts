@@ -1,14 +1,10 @@
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma.service';
 export declare class OrdersController {
     private readonly ordersService;
-    private readonly jwtService;
-    private readonly prisma;
-    constructor(ordersService: OrdersService, jwtService: JwtService, prisma: PrismaService);
-    create(body: any, authHeader?: string): Promise<{
+    constructor(ordersService: OrdersService);
+    create(body: any, req: any): Promise<{
         id: number;
         name: string;
         createdAt: Date;

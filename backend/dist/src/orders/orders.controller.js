@@ -20,30 +20,12 @@ const update_order_dto_1 = require("./dto/update-order.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const roles_guard_1 = require("../auth/roles.guard");
 const roles_decorator_1 = require("../auth/roles.decorator");
-const jwt_1 = require("@nestjs/jwt");
-const prisma_service_1 = require("../prisma.service");
 let OrdersController = class OrdersController {
-    constructor(ordersService, jwtService, prisma) {
+    constructor(ordersService) {
         this.ordersService = ordersService;
-        this.jwtService = jwtService;
-        this.prisma = prisma;
     }
-    async create(body, authHeader) {
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            try {
-                const token = authHeader.substring(7);
-                const decoded = this.jwtService.verify(token);
-                if (decoded && decoded.sub) {
-                    const user = await this.prisma.user.findUnique({ where: { id: decoded.sub } });
-                    if (user) {
-                        body.userId = user.id;
-                    }
-                }
-            }
-            catch (error) {
-                console.log('Failed to decode token for order creation, creating guest order');
-            }
-        }
+    async create(body, req) {
+        body.userId = req.user.id;
         return this.ordersService.create(body);
     }
     createOrder(createOrderDto) {
@@ -71,11 +53,12 @@ let OrdersController = class OrdersController {
 };
 exports.OrdersController = OrdersController;
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Headers)('authorization')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "create", null);
 __decorate([
@@ -139,8 +122,6 @@ __decorate([
 ], OrdersController.prototype, "remove", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
-    __metadata("design:paramtypes", [orders_service_1.OrdersService,
-        jwt_1.JwtService,
-        prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [orders_service_1.OrdersService])
 ], OrdersController);
 //# sourceMappingURL=orders.controller.js.map

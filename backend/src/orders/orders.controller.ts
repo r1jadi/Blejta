@@ -1,40 +1,23 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Delete, UseGuards, Request, Headers } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Delete, UseGuards, Request } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma.service';
 
 @Controller('orders')
 export class OrdersController {
   constructor(
-    private readonly ordersService: OrdersService,
-    private readonly jwtService: JwtService,
-    private readonly prisma: PrismaService
+    private readonly ordersService: OrdersService
   ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() body: any, @Headers('authorization') authHeader?: string) {
-    // Try to extract userId from JWT token if present
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.substring(7);
-        const decoded = this.jwtService.verify(token);
-        if (decoded && decoded.sub) {
-          // Verify user exists
-          const user = await this.prisma.user.findUnique({ where: { id: decoded.sub } });
-          if (user) {
-            body.userId = user.id;
-          }
-        }
-      } catch (error) {
-        // Token invalid or expired, continue without userId (guest order)
-        console.log('Failed to decode token for order creation, creating guest order');
-      }
-    }
+  async create(@Body() body: any, @Request() req: any) {
+    // User must be authenticated to place an order
+    // Set userId from authenticated user
+    body.userId = req.user.id;
     return this.ordersService.create(body);
   }
 
