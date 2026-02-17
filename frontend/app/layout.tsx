@@ -58,7 +58,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 </div>
               </div>
               <div className="pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
-                © {new Date().getFullYear()} Blejta. All rights reserved.
+                © {new Date().getFullYear()} Blejta By Bleta🐝. All rights reserved.
               </div>
             </div>
           </footer>
